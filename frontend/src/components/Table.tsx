@@ -1,6 +1,11 @@
+interface RowData {
+  className?: string
+  cells: React.ReactNode[]
+}
+
 interface TableData {
   headings: string[]
-  rows: React.ReactNode[][]
+  rows: RowData[]
 }
 
 interface TableProps {
@@ -12,13 +17,14 @@ export default function Table({data}: TableProps) {
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="mt-8 flow-root">
         <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div className="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <table className="min-w-full divide-y divide-gray-300">
+          <div className="inline-block min-w-full max-w-full overflow-hidden text-ellipsis py-2 align-middle sm:px-6 lg:px-8">
+            <table className="min-w-full max-w-full overflow-hidden divide-y text-ellipsis divide-gray-300">
               <thead>
                 <tr>
                   { data.headings.map((heading) => (
                     <th
                       scope="col"
+                      
                       className="whitespace-nowrap py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
                     >
                       {heading}
@@ -73,9 +79,9 @@ export default function Table({data}: TableProps) {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 { data.rows.map((row, i) => (
-                  <tr key={i}>
-                    { row.map((cell) => (
-                      <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0">{cell}</td>
+                  <tr key={i} className={row.className}>
+                    { row.cells.map((cell) => (
+                      <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-500 sm:pl-0 text-ellipsis">{cell}</td>
                     ))}
                   </tr>
                 ))}

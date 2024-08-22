@@ -4,6 +4,7 @@ import (
 	"context"
 	"dupesnoop/pkg/files"
 	"fmt"
+	"os"
 	"sort"
 
 	"github.com/dustin/go-humanize"
@@ -81,7 +82,14 @@ type FileDetails struct {
 	Path string `json:"path"`
 }
 
-func (a *App) GetPage(page int, resultsPer int) (map[string][]FileDetails, error) {
+type ResultsPage struct {
+	Current    int                      `json:"current"`
+	Total      int                      `json:"total"`
+	Duplicates map[string][]FileDetails `json:"duplicates"`
+}
+
+func (a *App) GetPage(page int, resultsPer int) (*ResultsPage, error) {
+	fmt.Printf("Getting page %d of %d\n", page, resultsPer)
 	if a.dupes == nil {
 		return nil, fmt.Errorf("run FindDuplicates first")
 	}
@@ -125,10 +133,37 @@ func (a *App) GetPage(page int, resultsPer int) (map[string][]FileDetails, error
 		}
 	}
 
-	return dupes, nil
+	return &ResultsPage{
+		Current:    page,
+		Total:      pages,
+		Duplicates: dupes,
+	}, nil
 }
 
-func (a *App) FindDuplicates(dir string) (map[string][]FileDetails, error) {
+func (a *App) DeleteFile(filePath string) error {
+
+	err := os.Remove(filePath)
+	if err != nil {
+		return err
+	}
+
+	// remove it from a.dupes
+	for hash, files := range a.dupes {
+		for i, file := range files {
+			if file.Path == filePath {
+				a.dupes[hash] = append(a.dupes[hash][:i], a.dupes[hash][i+1:]...)
+				break
+			}
+		}
+		if len(a.dupes[hash]) <= 1 {
+			delete(a.dupes, hash)
+		}
+	}
+
+	return nil
+}
+
+func (a *App) FindDuplicates(dir string, page int, resultsPer int) (*ResultsPage, error) {
 	progress := make(chan files.ProgressUpdate)
 
 	opts := files.StatusOptions{
@@ -162,5 +197,5 @@ func (a *App) FindDuplicates(dir string) (map[string][]FileDetails, error) {
 		}
 	}
 
-	return a.GetPage(0, 20)
+	return a.GetPage(page, resultsPer)
 }

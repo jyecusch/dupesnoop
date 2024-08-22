@@ -1,6 +1,7 @@
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  disabled?: boolean;
   variant?: "primary" | "secondary" | "link";
 }
 
@@ -10,11 +11,12 @@ const variants = {
   link: "text-indigo-600",
 };
 
-export default function Button({ children, onClick, variant }: ButtonProps) {
+export default function Button({ children, onClick, variant, disabled }: ButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={variants[variant || "primary"]}
     >
       {children}

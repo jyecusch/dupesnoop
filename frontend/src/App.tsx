@@ -2,7 +2,7 @@
 import "./App.css";
 import Header from "./components/Header";
 import Button from "./components/Button";
-import { FindDuplicates } from "../wailsjs/go/main/App";
+import { FindDuplicates, GetPage, DeleteFile } from "../wailsjs/go/main/App";
 import { EventsOn } from "../wailsjs/runtime";
 import { useEffect, useState } from "react";
 import FileBrowser from "./components/FileBrowser";
@@ -46,13 +46,16 @@ const updateToMessage = (update: ProgressUpdate) => {
   return `${update.current} (${update.processed}/${update.total})`;
 };
 
+const PAGE_SIZE = 10;
+
 function App() {
   const [selectedDir, setSelectedDir] = useState<string | undefined>(undefined);
-  const [foundDuplicates, setFoundDuplicates] = useState<
+  const [resultsPage, setResultsPage] = useState<
     Awaited<ReturnType<typeof FindDuplicates>> | undefined
   >(undefined);
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | undefined>(undefined);
   const [progress, setProgress] = useState<ProgressUpdate>({
     processed: 0,
@@ -66,13 +69,24 @@ function App() {
       setMessage(updateToMessage(p));
     });
 
-    EventsOn("duplicate", (dupeKey, dupeVals) => {
-      setFoundDuplicates((previous) => ({
-        ...(previous || {}),
-        [dupeKey]: dupeVals,
-      }));
-    });
+    // EventsOn("duplicate", (dupeKey, dupeVals) => {
+    //   setResultsPage((previous) => ({
+    //     ...(previous || {}),
+    //     [dupeKey]: dupeVals,
+    //   }));
+    // });
   }, []);
+
+  const fetchPage = async () => {
+    if (selectedDir) {
+      const pageData = await GetPage(page, PAGE_SIZE);
+      setResultsPage(pageData);
+    }
+  };
+
+  useEffect(() => {
+    fetchPage();
+  }, [page]);
 
   const dupes = async (path: string) => {
     if (loading) {
@@ -89,18 +103,27 @@ function App() {
     try {
       setError(undefined);
       setLoading(true);
-      setFoundDuplicates({});
-      const found = await FindDuplicates(path);
-      setFoundDuplicates(found);
+      setResultsPage(undefined);
+      const found = await FindDuplicates(path, 0, PAGE_SIZE);
+      setPage(0);
+      setResultsPage(found);
     } catch (e) {
       setError((e as Error).message);
     }
     setLoading(false);
   };
 
+  const deleteFile = async (path: string) => {
+    await DeleteFile(path);
+    await fetchPage();
+    // console.log("Deleting file", path);
+  }
+
+  const rowColor = (alt: boolean) =>  (alt ? "bg-indigo-500" : "bg-emerald-500");
+
   const listDuplicates = () => {
-    if (foundDuplicates) {
-      const keys = Object.keys(foundDuplicates);
+    if (resultsPage) {
+      const keys = Object.keys(resultsPage);
 
       if (keys.length === 0 && progress.status === "done") {
         return <div>No duplicates found</div>;
@@ -108,12 +131,18 @@ function App() {
 
       return (
         <Table
+          
           data={{
             headings: ["Name", "Path", "Size", "Controls"],
-            rows: Object.values(foundDuplicates).reduce((acc, dupe) => {
+            rows: Object.values(resultsPage.duplicates).reduce((acc, dupe, ix) => {
               return [
                 ...acc,
-                ...dupe.map((file) => [file.name, file.path, file.size, <Button variant="link">delete</Button>]),
+                ...dupe.map((file) => {
+                  return {
+                    className: ix % 2 === 0 ? "bg-gray-50" : "",
+                    cells: [<div className={"rounded-sm w-3 h-3 ml-3 " + rowColor(ix % 2 === 0)} />, <span className="pl-2">{file.name}</span>, file.path, file.size, <Button variant="link" onClick={() => deleteFile(file.path)}>delete</Button>]
+                  }
+                }),
               ];
             }, [] as React.ReactNode[]),
           }}
@@ -145,8 +174,16 @@ function App() {
           />
         )}
         {error && <div className="text-red-500">{error}</div>}
-        <div className="flex flex-col">
-          {foundDuplicates && listDuplicates()}
+        <div className="flex flex-col gap-4">
+          {resultsPage && listDuplicates()}
+          <div className="flex">
+            <Button disabled={page <= 0} onClick={() => {setPage(page => Math.max(0,page - 1))}}>{"<<"}</Button>
+            {/* TODO: Add total pages to backend */}
+            <span className="grid content-center mx-2">Page {page + 1} of {((resultsPage?.total) || 0) + 1}</span>
+            <Button disabled={page >= (resultsPage?.total || 0)} onClick={() => {setPage(page => page + 1)}}>{">>"}</Button>
+
+            
+          </div>
         </div>
       </div>
     </div>
