@@ -1,4 +1,3 @@
-import { useState } from "react";
 import Input from "./Input";
 import { SelectDirectory } from "../../wailsjs/go/main/App";
 

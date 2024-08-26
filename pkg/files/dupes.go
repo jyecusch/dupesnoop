@@ -83,6 +83,10 @@ func FindDuplicates(ctx context.Context, dir string, opts StatusOptions) (map[st
 			return nil
 		}
 
+		if info.Size() == 0 {
+			return nil
+		}
+
 		file := ComparableFile{
 			FileInfo: info,
 			Path:     path,

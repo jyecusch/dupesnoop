@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import FileBrowser from "./components/FileBrowser";
 import ProgressBar from "./components/ProgressBar";
 import Table from "./components/Table";
+import PageControls from "./components/PageControls";
 
 function percentage(value: number, total: number) {
   const result = Math.floor((value / total) * 100);
@@ -28,7 +29,6 @@ interface ProgressUpdate {
 
 const truncate = (str: string, n: number) =>
   str.length > n ? str.substr(0, n - 1) + "..." : str;
-
 
 const updateToMessage = (update: ProgressUpdate) => {
   if (update.status === "done") {
@@ -117,9 +117,7 @@ function App() {
     await DeleteFile(path);
     await fetchPage();
     // console.log("Deleting file", path);
-  }
-
-  const rowColor = (alt: boolean) =>  (alt ? "bg-indigo-500" : "bg-emerald-500");
+  };
 
   const listDuplicates = () => {
     if (resultsPage) {
@@ -131,20 +129,42 @@ function App() {
 
       return (
         <Table
-          
           data={{
-            headings: ["Name", "Path", "Size", "Controls"],
-            rows: Object.values(resultsPage.duplicates).reduce((acc, dupe, ix) => {
-              return [
-                ...acc,
-                ...dupe.map((file) => {
-                  return {
+            headings: ["", "Name", "Path", "Size", "Controls"],
+            rows: Object.values(resultsPage.duplicates).reduce(
+              (acc, dupe, ix) => {
+                const previousHash = acc[acc.length - 1]?.hash;
+                const previousColor = acc[acc.length - 1]?.color || "bg-indigo-500";
+
+                const color = dupe.hash === previousHash ? previousColor : previousColor === "bg-indigo-500" ? "bg-emerald-500" : "bg-indigo-500";
+
+                return [
+                  ...acc,
+                  {
+                    color: color,
+                    hash: dupe.hash,
                     className: ix % 2 === 0 ? "bg-gray-50" : "",
-                    cells: [<div className={"rounded-sm w-3 h-3 ml-3 " + rowColor(ix % 2 === 0)} />, <span className="pl-2">{file.name}</span>, file.path, file.size, <Button variant="link" onClick={() => deleteFile(file.path)}>delete</Button>]
-                  }
-                }),
-              ];
-            }, [] as React.ReactNode[]),
+                    cells: [
+                      <div
+                        className={
+                          "rounded-sm w-3 h-3 ml-3 " + color
+                        }
+                      />,
+                      <span className="pl-2">{dupe.name}</span>,
+                      dupe.path,
+                      dupe.humanSize,
+                      <Button
+                        variant="link"
+                        onClick={() => deleteFile(dupe.path)}
+                      >
+                        delete
+                      </Button>,
+                    ],
+                  },
+                ];
+              },
+              [] as any
+            ),
           }}
         />
       );
@@ -177,12 +197,13 @@ function App() {
         <div className="flex flex-col gap-4">
           {resultsPage && listDuplicates()}
           <div className="flex">
-            <Button disabled={page <= 0} onClick={() => {setPage(page => Math.max(0,page - 1))}}>{"<<"}</Button>
-            {/* TODO: Add total pages to backend */}
-            <span className="grid content-center mx-2">Page {page + 1} of {((resultsPage?.total) || 0) + 1}</span>
-            <Button disabled={page >= (resultsPage?.total || 0)} onClick={() => {setPage(page => page + 1)}}>{">>"}</Button>
-
-            
+            {resultsPage && resultsPage.total > 0 && (
+              <PageControls
+                page={page}
+                onPageChange={setPage}
+                totalPages={resultsPage?.total || 0}
+              />
+            )}
           </div>
         </div>
       </div>
