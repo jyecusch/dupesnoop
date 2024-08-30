@@ -4,9 +4,7 @@ import {main} from '../models';
 
 export function DeleteFile(arg1:string):Promise<void>;
 
-export function FindDuplicates(arg1:string,arg2:number,arg3:number):Promise<main.ResultsPage>;
-
-export function GetPage(arg1:number,arg2:number):Promise<main.ResultsPage>;
+export function FindDuplicates(arg1:string):Promise<Array<main.FileDetailsResult>>;
 
 export function Greet(arg1:string):Promise<string>;
 

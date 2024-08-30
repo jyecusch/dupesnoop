@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"dupesnoop/pkg/files"
 	"fmt"
 	"os"
-	"slices"
 
 	"github.com/dustin/go-humanize"
+	"github.com/jyecusch/dupesnoop/pkg/files"
+
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -26,24 +26,6 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	// Perform your setup here
 	a.ctx = ctx
-}
-
-// domReady is called after front-end resources have been loaded
-func (a App) domReady(ctx context.Context) {
-	// Add your action here
-	fmt.Println("DOM is ready")
-}
-
-// beforeClose is called when the application is about to quit,
-// either by clicking the window close button or calling runtime.Quit.
-// Returning true will cause the application to continue, false will continue shutdown as normal.
-func (a *App) beforeClose(ctx context.Context) (prevent bool) {
-	return false
-}
-
-// shutdown is called at application termination
-func (a *App) shutdown(ctx context.Context) {
-	// Perform your teardown here
 }
 
 // Greet returns a greeting for the given name
@@ -82,11 +64,11 @@ type FileDetails struct {
 	Path string `json:"path"`
 }
 
-type ResultsPage struct {
-	Current    int                 `json:"current"`
-	Total      int                 `json:"total"`
-	Duplicates []FileDetailsResult `json:"duplicates"`
-}
+// type ResultsPage struct {
+// 	Current    int                 `json:"current"`
+// 	Total      int                 `json:"total"`
+// 	Duplicates []FileDetailsResult `json:"duplicates"`
+// }
 
 type FileDetailsResult struct {
 	FileDetails
@@ -99,68 +81,73 @@ func totalPages(total int, perPage int) int {
 		return 0
 	}
 
+	// default to a single page containing all results
+	if perPage <= 0 {
+		return 1
+	}
+
 	// account for integer division causing a 'missing' page
 	return (total + perPage - 1) / perPage
 }
 
-func (a *App) GetPage(page int, resultsPer int) (*ResultsPage, error) {
-	fmt.Printf("Getting page %d\n", page)
-	if a.dupes == nil {
-		return nil, fmt.Errorf("run FindDuplicates first")
-	}
+// func (a *App) GetPage(page int, resultsPer int) (*pagination.Page[FileDetailsResult], error) {
+// 	fmt.Printf("Getting page %d\n", page)
+// 	if a.dupes == nil {
+// 		return nil, fmt.Errorf("run FindDuplicates first")
+// 	}
 
-	pages := totalPages(len(a.dupes), resultsPer)
+// 	pages := totalPages(len(a.dupes), resultsPer)
 
-	if page > pages {
-		return nil, fmt.Errorf("page out of range")
-	}
+// 	if page > pages {
+// 		return nil, fmt.Errorf("page out of range")
+// 	}
 
-	start := page * resultsPer
-	end := start + resultsPer
+// 	start := page * resultsPer
+// 	end := start + resultsPer
 
-	keys := make([]string, 0, len(a.dupes))
-	for k := range a.dupes {
-		keys = append(keys, k)
-	}
+// 	keys := make([]string, 0, len(a.dupes))
+// 	for k := range a.dupes {
+// 		keys = append(keys, k)
+// 	}
 
-	fmt.Printf("Dupes: %v\n", a.dupes)
+// 	fmt.Printf("Dupes: %v\n", a.dupes)
 
-	slices.SortStableFunc(keys, func(i string, j string) int {
-		if a.dupes[i][0].Size > a.dupes[j][0].Size {
-			return -1
-		} else if a.dupes[i][0].Size < a.dupes[j][0].Size {
-			return 1
-		}
-		return 0
-	})
+// 	slices.SortStableFunc(keys, func(i string, j string) int {
+// 		if a.dupes[i][0].Size > a.dupes[j][0].Size {
+// 			return -1
+// 		} else if a.dupes[i][0].Size < a.dupes[j][0].Size {
+// 			return 1
+// 		}
+// 		return 0
+// 	})
 
-	i := 0
-	dupes := make([]FileDetailsResult, 0, resultsPer)
-	for _, k := range keys {
-		for _, file := range a.dupes[k] {
-			if i >= start && i < end {
-				dupes = append(dupes, FileDetailsResult{
-					FileDetails: file,
-					HumanSize:   humanize.Bytes(uint64(file.Size)),
-					Hash:        k,
-				})
-			}
-			i++
-			if i >= end {
-				break
-			}
-		}
-		if i >= end {
-			break
-		}
-	}
+// 	i := 0
+// 	dupes := make([]FileDetailsResult, 0, resultsPer)
+// 	for _, k := range keys {
+// 		for _, file := range a.dupes[k] {
+// 			if i >= start && i < end {
+// 				dupes = append(dupes, FileDetailsResult{
+// 					FileDetails: file,
+// 					HumanSize:   humanize.Bytes(uint64(file.Size)),
+// 					Hash:        k,
+// 				})
+// 			}
+// 			i++
+// 			if i >= end {
+// 				break
+// 			}
+// 		}
+// 		if i >= end {
+// 			break
+// 		}
+// 	}
 
-	return &ResultsPage{
-		Current:    page,
-		Total:      pages,
-		Duplicates: dupes,
-	}, nil
-}
+// 	return &ResultsPage{
+// 		Current:    page,
+// 		Total:      pages,
+// 		Duplicates: dupes,
+// 	}, nil
+// }
 
 func (a *App) DeleteFile(filePath string) error {
 
@@ -186,7 +173,7 @@ func (a *App) DeleteFile(filePath string) error {
 	return nil
 }
 
-func (a *App) FindDuplicates(dir string, page int, resultsPer int) (*ResultsPage, error) {
+func (a *App) FindDuplicates(dir string) ([]FileDetailsResult, error) {
 	progress := make(chan files.ProgressUpdate)
 
 	opts := files.StatusOptions{
@@ -207,18 +194,24 @@ func (a *App) FindDuplicates(dir string, page int, resultsPer int) (*ResultsPage
 		return nil, err
 	}
 
-	a.dupes = make(map[string][]FileDetails, len(dupes))
+	a.dupes = make(map[string][]FileDetails)
+
+	results := []FileDetailsResult{}
 
 	for hash, files := range dupes {
 		a.dupes[hash] = make([]FileDetails, len(files))
-		for i, file := range files {
-			a.dupes[hash][i] = FileDetails{
-				Name: file.Name(),
-				Size: file.Size(),
-				Path: file.Path,
-			}
+		for _, file := range files {
+			results = append(results, FileDetailsResult{
+				FileDetails: FileDetails{
+					Name: file.Name(),
+					Size: file.Size(),
+					Path: file.Path,
+				},
+				HumanSize: humanize.Bytes(uint64(file.Size())),
+				Hash:      hash,
+			})
 		}
 	}
 
-	return a.GetPage(page, resultsPer)
+	return results, nil
 }

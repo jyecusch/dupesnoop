@@ -6,12 +6,8 @@ export function DeleteFile(arg1) {
   return window['go']['main']['App']['DeleteFile'](arg1);
 }
 
-export function FindDuplicates(arg1, arg2, arg3) {
-  return window['go']['main']['App']['FindDuplicates'](arg1, arg2, arg3);
-}
-
-export function GetPage(arg1, arg2) {
-  return window['go']['main']['App']['GetPage'](arg1, arg2);
+export function FindDuplicates(arg1) {
+  return window['go']['main']['App']['FindDuplicates'](arg1);
 }
 
 export function Greet(arg1) {

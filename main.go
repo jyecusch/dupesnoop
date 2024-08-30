@@ -15,7 +15,7 @@ var icon []byte
 
 func main() {
 	// Create an instance of the app structure
-	app := NewApp()
+	application := NewApp()
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -24,9 +24,9 @@ func main() {
 		Height:           768,
 		Assets:           assets,
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		OnStartup:        application.startup,
 		Bind: []interface{}{
-			app,
+			application,
 		},
 	})
 

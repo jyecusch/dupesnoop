@@ -6,7 +6,7 @@ interface InputProps {
   onClick?: () => void;
 }
 
-export default function Input({ label, value, onClick }: InputProps) {
+export default function Input({ label, value = "", onClick }: InputProps) {
   return (
     <div>
       <label htmlFor="text" className="block text-sm font-medium leading-6 text-gray-900">

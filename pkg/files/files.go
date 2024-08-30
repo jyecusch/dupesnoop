@@ -15,28 +15,6 @@ type ComparableFile struct {
 	hash []byte
 }
 
-// func (a *ComparableFile) GetSize() (int64, error) {
-// 	if a.size == nil {
-// 		size, err := getFileSize(a.Path)
-// 		if err != nil {
-// 			return 0, err
-// 		}
-
-// 		a.size = &size
-// 	}
-
-// 	return *a.size, nil
-// }
-
-// func (a *ComparableFile) GetSizeSafe() int64 {
-// 	size, err := a.GetSize()
-// 	if err != nil {
-// 		return 0
-// 	}
-
-// 	return size
-// }
-
 func (a *ComparableFile) GetHash() ([]byte, error) {
 	if a.hash == nil {
 		hash, err := HashFileXXHash(a.Path)
