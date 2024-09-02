@@ -28,22 +28,21 @@ const colorVariants = {
     "hover:bg-indigo-500",
     "shadow-md hover:shadow-lg"
   ),
+  secondary: classNames(
+    "bg-gray-50 text-gray-900",
+    "ring-1 ring-inset ring-gray-300",
+    "hover:bg-gray-50"
+  ),
   warning: classNames(
     "bg-red-600 text-white",
     "hover:bg-red-500",
     "shadow-md hover:shadow-lg"
   ),
-  secondary: classNames(
-    "bg-gray-200 text-gray-900",
-    "ring-1 ring-inset ring-gray-300",
-    "hover:bg-gray-50"
-  ),
   link: classNames("text-indigo-600", "hover:text-indigo-800"),
 };
 
 const elevatedStyles = classNames(
-  "bg-white border border-gray-400",
-  "shadow hover:bg-gray-100"
+  "border border-gray-200 shadow"
 );
 
 export default function Button({

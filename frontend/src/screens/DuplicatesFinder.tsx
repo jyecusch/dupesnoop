@@ -6,6 +6,8 @@ import {
 } from "@/context/duplicates/DuplicatesContext";
 import DuplicateList from "@/components/Duplicates/DuplicatesList";
 import DuplicateFilesBrowser from "@/components/Duplicates/DuplicatesFileBrowser";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useState } from "react";
 
 interface FooterProps {
   totalDuplicates: number;
@@ -22,6 +24,7 @@ const Footer = ({ totalDuplicates }: FooterProps) => {
 const Duplicates: React.FunctionComponent = () => {
   const ctx = useDuplicatesContext();
   const dispatch = useDispatch();
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const selected = ctx.duplicates.filter((d) => d.selected);
 
@@ -30,16 +33,35 @@ const Duplicates: React.FunctionComponent = () => {
       <div className="w-full h-full flex flex-col gap-3 pt-1 flex-auto overflow-visible">
         <DuplicateFilesBrowser />
         <div className="flex gap-2">
-          <Button disabled={!ctx.path} onClick={() => dispatch({ type: "find_duplicates" })}>
+          <Button
+            disabled={!ctx.path}
+            onClick={() => dispatch({ type: "find_duplicates" })}
+          >
             Find duplicates
           </Button>
           <Button
             color="warning"
             disabled={!selected.length}
-            onClick={() => dispatch({ type: "delete_duplicate", paths: selected.map((d) => d.path) })}
+            onClick={() => setShowConfirm(true)}
           >
             Delete selected
           </Button>
+          {showConfirm && (
+            <ConfirmDialog
+              onCancel={() => setShowConfirm(false)}
+              onConfirm={() => {
+                setShowConfirm(false);
+                dispatch({
+                  type: "delete_duplicate",
+                  paths: selected.map((d) => d.path),
+                });
+              }}
+            >
+              <div className="text-md text-center">
+                Are you sure you want to delete <span className="text-indigo-600 font-bold">{selected.length}</span> duplicates?
+              </div>
+            </ConfirmDialog>
+          )}
           <div className="my-auto text-sm">
             {ctx.finding &&
               ctx.progress &&

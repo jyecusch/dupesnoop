@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { List, AutoSizer } from "react-virtualized";
 import Button from "../Button";
 import Checkbox from "../Checkbox";
+import ConfirmDialog from "../ConfirmDialog";
 
 const ROW_HEIGHT = 25; // Height of each row in pixels
 
@@ -61,7 +62,10 @@ const Header = () => {
         File path
       </div>
       <div className="col-span-1 overflow-hidden pl-2 text-ellipsis whitespace-nowrap border-r">
-        <div className="flex align-middle cursor-pointer" onClick={() => dispatch({ type: "sort", option: "size" })}>
+        <div
+          className="flex align-middle cursor-pointer"
+          onClick={() => dispatch({ type: "sort", option: "size" })}
+        >
           Size{" "}
           {sortOption === "size" && (
             <SortIcon direction={sortDirection || "asc"} />
@@ -77,46 +81,6 @@ interface DeleteModelProps {
   onClose: () => void;
   duplicate: Duplicate;
 }
-
-const DeleteModel = ({ onClose, duplicate }: DeleteModelProps) => {
-  const dispatch = useDispatch();
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-4 rounded-lg max-w-md w-full">
-        <div className="text-md text-center">
-          Are you sure you want to delete{" "}
-          <span className="text-indigo-600">{duplicate.path}</span>?
-        </div>
-        <div className="flex justify-center mt-4 gap-2">
-          <Button
-            elevated
-            color="secondary"
-            onClick={() => {
-              onClose();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            elevated
-            color="primary"
-            onClick={() => {
-              onClose();
-              console.log("Deleting", duplicate.path);
-              dispatch({
-                type: "delete_duplicate",
-                paths: [duplicate.path],
-              });
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 interface DuplicateRowProps {
   index: number;
@@ -189,14 +153,23 @@ const DuplicateRow = ({
           className="w-4 h-4 mx-auto text-red-400 hover:text-red-600 cursor-pointer"
           onClick={() => setDeletePath(duplicate.path)}
         />
-        {deletePath &&
-          createPortal(
-            <DeleteModel
-              duplicate={duplicate}
-              onClose={() => setDeletePath("")}
-            />,
-            document.body
-          )}
+        {deletePath && (
+          <ConfirmDialog
+            onCancel={() => setDeletePath("")}
+            onConfirm={() => {
+              setDeletePath("");
+              dispatch({
+                type: "delete_duplicate",
+                paths: [deletePath],
+              });
+            }}
+          >
+            <div className="text-md text-center">
+              Are you sure you want to delete{" "}
+              <span className="text-indigo-600 font-bold">{duplicate.path}</span>?
+            </div>
+          </ConfirmDialog>
+        )}
       </div>
     </div>
   );
