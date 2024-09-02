@@ -1,12 +1,9 @@
 package files
 
 import (
-	"crypto/sha256"
-	"hash/crc32"
-	"io"
 	"os"
 
-	"github.com/cespare/xxhash"
+	"github.com/spf13/afero"
 )
 
 type ComparableFile struct {
@@ -15,9 +12,9 @@ type ComparableFile struct {
 	hash []byte
 }
 
-func (a *ComparableFile) GetHash() ([]byte, error) {
+func (a *ComparableFile) GetHash(fs afero.Fs) ([]byte, error) {
 	if a.hash == nil {
-		hash, err := HashFileXXHash(a.Path)
+		hash, err := HashFileXXHash(fs, a.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -28,63 +25,11 @@ func (a *ComparableFile) GetHash() ([]byte, error) {
 	return a.hash, nil
 }
 
-func (a *ComparableFile) GetHashSafe() []byte {
-	hash, err := a.GetHash()
+func (a *ComparableFile) GetHashSafe(fs afero.Fs) []byte {
+	hash, err := a.GetHash(fs)
 	if err != nil {
 		return nil
 	}
 
 	return hash
-}
-
-// HashFileSHA256 computes the SHA-256 hash of a file.
-// It is cryptographically secure, but slow.
-func HashFileSHA256(filePath string) ([]byte, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return nil, err
-	}
-
-	return hasher.Sum(nil), nil
-}
-
-// HashFileXXHash computes the XXHash hash of a file.
-// It's extremely fast, but not cryptographically secure.
-func HashFileXXHash(filePath string) ([]byte, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	hasher := xxhash.New()
-	if _, err := io.Copy(hasher, file); err != nil {
-		return nil, err
-	}
-
-	return hasher.Sum(nil), nil
-}
-
-// HashFileCRC32 computes the CRC32 hash of a file, this is faster than SHA-256.
-// It is not cryptographically secure, but it is good enough for duplicate detection, when speed is important.
-func HashFileCRC32(filePath string) (uint32, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
-	defer file.Close()
-
-	table := crc32.MakeTable(crc32.IEEE)
-	hasher := crc32.New(table)
-	if _, err := io.Copy(hasher, file); err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum32(), nil
 }

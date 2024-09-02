@@ -23,13 +23,22 @@ const Duplicates: React.FunctionComponent = () => {
   const ctx = useDuplicatesContext();
   const dispatch = useDispatch();
 
+  const selected = ctx.duplicates.filter((d) => d.selected);
+
   return (
     <DefaultLayout>
-      <div className="w-full h-full flex px-5 flex-col gap-3 pt-1 flex-auto">
+      <div className="w-full h-full flex flex-col gap-3 pt-1 flex-auto overflow-visible">
         <DuplicateFilesBrowser />
         <div className="flex gap-2">
-          <Button onClick={() => dispatch({ type: "find_duplicates" })}>
+          <Button disabled={!ctx.path} onClick={() => dispatch({ type: "find_duplicates" })}>
             Find duplicates
+          </Button>
+          <Button
+            color="warning"
+            disabled={!selected.length}
+            onClick={() => dispatch({ type: "delete_duplicate", paths: selected.map((d) => d.path) })}
+          >
+            Delete selected
           </Button>
           <div className="my-auto text-sm">
             {ctx.finding &&

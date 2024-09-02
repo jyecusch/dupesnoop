@@ -6,9 +6,8 @@ interface DefaultLayoutProps {
 
 const DefaultLayout = ({ children }: DefaultLayoutProps) => {
   return (
-    <div className="min-h-screen w-full px-6 bg-white flex flex-col place-items-center justify-items-center py-8">
-      <Header title="Pete's DupeSnoop"></Header>
-      <section className="w-full min-h-full flex-auto flex flex-col">{children}</section>
+    <div className="bg-[#F8F8F6] min-h-screen w-full px-6 flex flex-col place-items-center justify-items-center py-8 overflow-visible">
+      <section className="w-full min-h-full flex-auto flex flex-col overflow-visible">{children}</section>
     </div>
   );
 };

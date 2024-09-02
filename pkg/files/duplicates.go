@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"path/filepath"
+
+	"github.com/spf13/afero"
 )
 
 type StatusOptions struct {
@@ -20,15 +21,19 @@ type ProgressUpdate struct {
 	Current   string `json:"current"`
 }
 
-func FindDuplicates(ctx context.Context, dir string, opts StatusOptions) (map[string][]*ComparableFile, error) {
+func FindDuplicates(fs afero.Fs, ctx context.Context, dir string, opts StatusOptions) (map[string][]*ComparableFile, error) {
 	count := 0
 	if opts.Progress != nil {
 		opts.Progress <- ProgressUpdate{
 			Status: "counting",
 		}
-		fmt.Println("Counting files")
-		err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-			if d.Type().IsRegular() {
+
+		err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				fmt.Printf("Error counting files, path: %s, error: %s\n", path, err)
+				return err
+			}
+			if info.Mode().IsRegular() {
 				count++
 				opts.Progress <- ProgressUpdate{
 					Status: "counting",
@@ -55,32 +60,26 @@ func FindDuplicates(ctx context.Context, dir string, opts StatusOptions) (map[st
 		Status: "processing",
 		Total:  count,
 	}
-	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+
+	err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			fmt.Printf("Error walking directory: %s\n", err)
 			return err
 		}
 
-		if !d.Type().IsRegular() {
+		if !info.Mode().IsRegular() {
 			fmt.Println("Skipping directory", path)
 			return nil
 		}
 
 		processed++
 		if opts.Progress != nil {
-			fmt.Printf("Progress: %d/%d\n", processed, count)
 			opts.Progress <- ProgressUpdate{
 				Status:    "processing",
 				Total:     count,
 				Processed: processed,
 				Current:   path,
 			}
-		}
-
-		info, err := d.Info()
-		if err != nil {
-			fmt.Printf("Error getting file info for %s: %s\n", path, err)
-			return nil
 		}
 
 		if info.Size() == 0 {
@@ -99,27 +98,27 @@ func FindDuplicates(ctx context.Context, dir string, opts StatusOptions) (map[st
 		} else {
 			fileBySize[info.Size()] = append(fileBySize[info.Size()], &file)
 
-			hash := hex.EncodeToString(file.GetHashSafe())
+			hash := hex.EncodeToString(file.GetHashSafe(fs))
 
 			if fileByHash[hash] == nil {
 				fileByHash[hash] = []*ComparableFile{}
 
 				for _, f := range fileBySize[info.Size()] {
-					otherHash := hex.EncodeToString(f.GetHashSafe())
+					otherHash := hex.EncodeToString(f.GetHashSafe(fs))
 
 					if otherHash == hash {
 						fileByHash[hash] = append(fileByHash[hash], f)
 					}
 				}
 			} else {
-				fileByHash[hex.EncodeToString(file.GetHashSafe())] = append(fileByHash[hex.EncodeToString(file.GetHashSafe())], &file)
+				fileByHash[hex.EncodeToString(file.GetHashSafe(fs))] = append(fileByHash[hex.EncodeToString(file.GetHashSafe(fs))], &file)
 			}
 		}
 
 		return nil
 	})
 
-	// Delete hash keys with only one file, as they are not duplicates
+	// Delete hash keys with only one file, they are not duplicates
 	for hash, files := range fileByHash {
 		if len(files) == 1 {
 			delete(fileByHash, hash)
@@ -143,3 +142,21 @@ func FindDuplicates(ctx context.Context, dir string, opts StatusOptions) (map[st
 
 	return fileByHash, nil
 }
+
+// func FindDuplicatesThreaded(fs afero.Fs, dir string) {
+
+// 	afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
+// 		if err != nil {
+// 			fmt.Printf("Error walking directory: %s\n", err)
+// 			return err
+// 		}
+
+// 		if !info.Mode().IsRegular() {
+// 			fmt.Println("Skipping directory", path)
+// 			return nil
+// 		}
+
+// 		return nil
+// 	})
+
+// }

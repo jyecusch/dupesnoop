@@ -4,7 +4,6 @@ export namespace main {
 	    name: string;
 	    size: number;
 	    path: string;
-	    humanSize: string;
 	    hash: string;
 	
 	    static createFrom(source: any = {}) {
@@ -16,7 +15,6 @@ export namespace main {
 	        this.name = source["name"];
 	        this.size = source["size"];
 	        this.path = source["path"];
-	        this.humanSize = source["humanSize"];
 	        this.hash = source["hash"];
 	    }
 	}

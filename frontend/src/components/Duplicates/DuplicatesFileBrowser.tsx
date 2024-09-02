@@ -2,7 +2,6 @@ import {
   useDispatch,
   useDuplicatesContext,
 } from "@/context/duplicates/DuplicatesContext";
-import { useContext } from "react";
 import FileBrowser from "../FileBrowser";
 
 function DuplicateFilesBrowser() {

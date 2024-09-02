@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 
+	"github.com/spf13/afero"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 )
@@ -15,7 +16,7 @@ var icon []byte
 
 func main() {
 	// Create an instance of the app structure
-	application := NewApp()
+	application := NewApp(afero.NewOsFs())
 
 	// Create application with options
 	err := wails.Run(&options.App{
