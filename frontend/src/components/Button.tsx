@@ -4,6 +4,7 @@ import classNames from "classnames";
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
+  className?: string;
   disabled?: boolean;
   color?: "primary" | "secondary" | "link" | "warning";
   elevated?: boolean;
@@ -51,12 +52,14 @@ export default function Button({
   color = "primary",
   elevated = false,
   disabled,
+  className = "",
 }: ButtonProps) {
   const classes = classNames(
     baseStyles,
     colorVariants[color],
     { [elevatedStyles]: elevated },
-    disabledStyles
+    disabledStyles,
+    ...className.split(" "),
   );
 
   return (
